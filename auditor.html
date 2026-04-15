@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auditor Dashboard</title>
+</head>
+<body>
+
+    <h2>Auditor Dashboard</h2>
+    <h3 id="welcomeMessage"></h3>
+
+    <p id="loginStatus"></p>
+
+    <button onclick="getMe()">Get My Info</button>
+    <p id="userInfo"></p>
+
+    <hr>
+
+    <button onclick="getFindings()">View Findings</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="logout()">Logout</button>
+
+    <div id="status"></div>
+
+    <script>
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            alert("You are not logged in");
+            window.location.href = "index.html";
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+
+        if (code) {
+            document.getElementById("loginStatus").innerText = "Login successful";
+            getMe();
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        function getMe() {
+            fetch("http://127.0.0.1:8000/me", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(JSON.stringify(data));
+                return data;
+            })
+            .then((data) => {
+                const username = data.user.username;
+                const groups = data.user["cognito:groups"]?.join(", ") || "User";
+
+                document.getElementById("userInfo").innerText =
+                    `Logged in as: ${username} | Role: ${groups}`;
+
+                document.getElementById("welcomeMessage").innerText =
+                    `Welcome, ${groups}`;
+            })
+            .catch((err) => {
+                console.error("ME ERROR:", err);
+                document.getElementById("userInfo").innerText = "Error getting user info";
+            });
+        }
+
+        function getFindings() {
+            fetch("http://127.0.0.1:8000/findings", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) throw new Error(JSON.stringify(data));
+                return data;
+            })
+            .then((data) => {
+                const summary = data.compliance_summary;
+
+                let findingsHtml = `
+                    <h3>Findings Summary</h3>
+                    <p><strong>Scan date:</strong> ${data.scan_date}</p>
+                    <p><strong>Total results:</strong> ${data.total_results}</p>
+                    <p><strong>Compliance score:</strong> ${summary.compliance_score}</p>
+                    <p><strong>High risk:</strong> ${summary.high_risk}</p>
+                    <p><strong>Medium risk:</strong> ${summary.medium_risk}</p>
+                    <p><strong>Low risk:</strong> ${summary.low_risk}</p>
+                    <h3>Service Findings</h3>
+                    <ul>
+                `;
+
+                data.results.forEach(item => {
+                    findingsHtml += `
+                        <li>
+                            <strong>Service:</strong> ${item.service || "N/A"} |
+                            <strong>Resource:</strong> ${item.resource || "N/A"} |
+                            <strong>Issue:</strong> ${item.issue || "N/A"} |
+                            <strong>Severity:</strong> ${item.severity || "N/A"} |
+                            <strong>Status:</strong> ${item.status || "N/A"}
+                        </li>
+                    `;
+                });
+
+                findingsHtml += `</ul>`;
+                document.getElementById("status").innerHTML = findingsHtml;
+            })
+            .catch((err) => {
+                console.error("FINDINGS ERROR:", err);
+                document.getElementById("status").innerText = "Failed to load findings.";
+            });
+        }
+
+        function exportCSV() {
+            fetch("http://127.0.0.1:8000/export", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            })
+            .then(async (res) => {
+                if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err);
+                }
+                return res.blob();
+            })
+            .then((blob) => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "cloud_security_report.csv";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch((err) => {
+                console.error("EXPORT ERROR:", err);
+                document.getElementById("status").innerText = "CSV export failed.";
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem("token");
+            alert("Logged out successfully");
+            window.location.href = "index.html";
+        }
+    </script>
+
+</body>
+</html>

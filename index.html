@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BCDR Dashboard Login</title>
+</head>
+<body>
+    <h2>Threat Detection & SIEM Dashboard</h2>
+
+    <button id="loginBtn" onclick="login()">Sign In</button>
+
+    <p id="loginStatus">Not logged in</p>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+
+        if (code) {
+            document.getElementById("loginStatus").innerText =
+                "Authorization code received. Exchanging token...";
+            exchangeCodeForToken(code);
+        }
+
+        function login() {
+            const cognitoUrl =
+                "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com/login?client_id=451a5hf6nd4btsiiftmi039hfv&response_type=code&scope=openid+profile+email&redirect_uri=http://localhost:3000";
+            window.location.href = cognitoUrl;
+        }
+
+        function exchangeCodeForToken(code) {
+            fetch("https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com/oauth2/token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body:
+                    `grant_type=authorization_code&client_id=451a5hf6nd4btsiiftmi039hfv&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent("http://localhost:3000")}`
+            })
+            .then(async (res) => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(JSON.stringify(data));
+                }
+                return data;
+            })
+            .then((data) => {
+                console.log("TOKEN RESPONSE:", data);
+                localStorage.setItem("token", data.access_token);
+
+                document.getElementById("loginStatus").innerText = "Login successful. Checking role...";
+
+                return fetch("http://127.0.0.1:8000/me", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${data.access_token}`
+                    }
+                });
+            })
+            .then(async (res) => {
+                const userData = await res.json();
+                if (!res.ok) {
+                    throw new Error(JSON.stringify(userData));
+                }
+                return userData;
+            })
+            .then((userData) => {
+                const groups = userData.user["cognito:groups"] || [];
+
+                if (groups.includes("Admin")) {
+                    window.location.href = "admin.html";
+                } else if (groups.includes("Auditor")) {
+                    window.location.href = "auditor.html";
+                } else {
+                    document.getElementById("loginStatus").innerText = "Unknown role";
+                }
+            })
+            .catch((err) => {
+                console.error("LOGIN FLOW ERROR:", err);
+                document.getElementById("loginStatus").innerText = "Login failed";
+            });
+        }
+    </script>
+</body>
+</html>
