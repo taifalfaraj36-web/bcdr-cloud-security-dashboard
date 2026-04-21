@@ -1,82 +1,437 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>BCDR Dashboard Login</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BCDR Security Dashboard Login</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f8fafc, #e9eef5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #1f2937;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            background: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+        }
+
+        .left-panel {
+            background: linear-gradient(160deg, #f8fbff, #eef3f8);
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .logo-box {
+            width: 120px;
+            height: 110px;
+            border-radius: 20px;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.10);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
+            overflow: hidden;
+        }
+
+        .logo-box img {
+            width: 75%;
+            height: 75%;
+            object-fit: contain;
+        }
+
+        .left-panel h1 {
+            font-size: 2.4rem;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: #0f172a;
+        }
+
+        .left-panel p {
+            font-size: 1.02rem;
+            line-height: 1.8;
+            color: #475569;
+            max-width: 560px;
+        }
+
+        .feature-list {
+            margin-top: 28px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .feature-item {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+            color: #334155;
+            font-size: 0.96rem;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, border-color 0.25s ease;
+            cursor: default;
+            font-weight: 600;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-6px);
+            background: #f8fbff;
+            border-color: #93c5fd;
+            box-shadow: 0 18px 32px rgba(29, 78, 216, 0.14);
+        }
+
+        .right-panel {
+            padding: 60px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .login-badge {
+            display: inline-block;
+            padding: 8px 14px;
+            background: #f1f5f9;
+            color: #334155;
+            border-radius: 999px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        .login-card h2 {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            color: #111827;
+        }
+
+        .login-card .subtext {
+            color: #64748b;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            font-size: 0.97rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 16px 20px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.25s ease;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.22);
+            margin-bottom: 18px;
+        }
+
+        .login-btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(29, 78, 216, 0.25);
+        }
+
+        .login-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+            transform: none;
+        }
+
+        .status-box {
+            min-height: 64px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+        }
+
+        .status-success {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+            color: #166534;
+        }
+
+        .status-error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+
+        .status-info {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .spinner-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.35);
+            border-top: 3px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+        }
+
+        .footer-note {
+            margin-top: 18px;
+            font-size: 0.88rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .login-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .left-panel,
+            .right-panel {
+                padding: 40px 28px;
+            }
+
+            .left-panel h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h2>Threat Detection & SIEM Dashboard</h2>
+    <div class="login-wrapper">
+        <div class="left-panel">
+            <div class="logo-box">
+                <img
+                    src="bcdr-logo.png.png"
+                    alt="BCDR Logo"
+                    onerror="this.style.display='none'; this.parentNode.innerHTML='BCDR'; this.parentNode.style.fontWeight='700'; this.parentNode.style.color='#0f172a';"
+                >
+            </div>
 
-    <button id="loginBtn" onclick="login()">Sign In</button>
+            <h1>BCDR Cloud Security Monitoring Dashboard</h1>
+            <p>
+                Securely access the dashboard to monitor AWS cloud configurations,
+                review compliance posture, and analyze security findings across IAM,
+                S3, EC2, and CloudTrail services.
+            </p>
 
-    <p id="loginStatus">Not logged in</p>
+            <div class="feature-list">
+                <div class="feature-item">Secure authentication with AWS Cognito and MFA</div>
+                <div class="feature-item">Role-based access for Admin and Auditor users</div>
+                <div class="feature-item">Cloud compliance insights with exportable findings</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="login-card">
+                <span class="login-badge">Secure Access Portal</span>
+                <h2>Sign In</h2>
+                <p class="subtext">
+                    Continue to the BCDR security dashboard using your authorized
+                    account. Authentication is protected with multi-factor verification.
+                </p>
+
+                <button id="loginBtn" class="login-btn" onclick="login()">
+                    Sign in with Cognito
+                </button>
+
+                <div class="status-box" id="loginStatus">Not logged in</div>
+
+                <p class="footer-note">Authorized users only</p>
+            </div>
+        </div>
+    </div>
 
     <script>
+        const COGNITO_DOMAIN = "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com";
+        const CLIENT_ID = "451a5hf6nd4btsiiftmi039hfv";
+        const REDIRECT_URI = "http://localhost:3000";
+        const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+
+        const statusBox = document.getElementById("loginStatus");
+        const loginBtn = document.getElementById("loginBtn");
+
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
+        const error = urlParams.get("error");
+        const errorDescription = urlParams.get("error_description");
+
+        if (error) {
+            setStatus(
+                decodeURIComponent(errorDescription || "Authentication was cancelled or failed."),
+                "error"
+            );
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         if (code) {
-            document.getElementById("loginStatus").innerText =
-                "Authorization code received. Exchanging token...";
+            setLoadingState(true, "Authorization code received. Signing you in...");
             exchangeCodeForToken(code);
         }
 
+        function setStatus(message, type = "default") {
+            statusBox.className = "status-box";
+
+            if (type === "success") {
+                statusBox.classList.add("status-success");
+            } else if (type === "error") {
+                statusBox.classList.add("status-error");
+            } else if (type === "info") {
+                statusBox.classList.add("status-info");
+            }
+
+            statusBox.innerText = message;
+        }
+
+        function setLoadingState(isLoading, message = "Processing...") {
+            loginBtn.disabled = isLoading;
+
+            if (isLoading) {
+                loginBtn.innerHTML = `<span class="spinner-wrap"><span class="spinner"></span>Signing in...</span>`;
+                setStatus(message, "info");
+            } else {
+                loginBtn.innerText = "Sign in with Cognito";
+            }
+        }
+
         function login() {
+            localStorage.removeItem("token");
+            setLoadingState(true, "Redirecting to Cognito login page...");
+
             const cognitoUrl =
-                "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com/login?client_id=451a5hf6nd4btsiiftmi039hfv&response_type=code&scope=openid+profile+email&redirect_uri=http://localhost:3000";
+                `${COGNITO_DOMAIN}/login?client_id=${CLIENT_ID}` +
+                `&response_type=code` +
+                `&scope=openid+profile+email` +
+                `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+                `&prompt=login`;
+
             window.location.href = cognitoUrl;
         }
 
-        function exchangeCodeForToken(code) {
-            fetch("https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com/oauth2/token", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body:
-                    `grant_type=authorization_code&client_id=451a5hf6nd4btsiiftmi039hfv&code=${encodeURIComponent(code)}&redirect_uri=${encodeURIComponent("http://localhost:3000")}`
-            })
-            .then(async (res) => {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(JSON.stringify(data));
+        async function exchangeCodeForToken(authCode) {
+            try {
+                const response = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body:
+                        `grant_type=authorization_code` +
+                        `&client_id=${CLIENT_ID}` +
+                        `&code=${encodeURIComponent(authCode)}` +
+                        `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error_description || data.error || "Token exchange failed");
                 }
-                return data;
-            })
-            .then((data) => {
-                console.log("TOKEN RESPONSE:", data);
+
+                if (!data.access_token) {
+                    throw new Error("No access token returned from Cognito.");
+                }
+
                 localStorage.setItem("token", data.access_token);
+                window.history.replaceState({}, document.title, window.location.pathname);
 
-                document.getElementById("loginStatus").innerText = "Login successful. Checking role...";
+                setStatus("Login successful. Verifying user role...", "success");
 
-                return fetch("http://127.0.0.1:8000/me", {
+                const meResponse = await fetch(`${BACKEND_BASE_URL}/me`, {
                     method: "GET",
                     headers: {
                         "Authorization": `Bearer ${data.access_token}`
                     }
                 });
-            })
-            .then(async (res) => {
-                const userData = await res.json();
-                if (!res.ok) {
-                    throw new Error(JSON.stringify(userData));
+
+                const userData = await meResponse.json();
+
+                if (!meResponse.ok) {
+                    throw new Error(userData.detail || "Failed to verify token with backend.");
                 }
-                return userData;
-            })
-            .then((userData) => {
+
                 const groups = userData.user["cognito:groups"] || [];
 
                 if (groups.includes("Admin")) {
-                    window.location.href = "admin.html";
+                    setStatus("Admin access verified. Redirecting to dashboard...", "success");
+                    setTimeout(() => {
+                        window.location.href = "admin.html";
+                    }, 600);
                 } else if (groups.includes("Auditor")) {
-                    window.location.href = "auditor.html";
+                    setStatus("Auditor access verified. Redirecting to dashboard...", "success");
+                    setTimeout(() => {
+                        window.location.href = "auditor.html";
+                    }, 600);
                 } else {
-                    document.getElementById("loginStatus").innerText = "Unknown role";
+                    localStorage.removeItem("token");
+                    throw new Error("Login succeeded, but no valid Admin or Auditor role was found.");
                 }
-            })
-            .catch((err) => {
-                console.error("LOGIN FLOW ERROR:", err);
-                document.getElementById("loginStatus").innerText = "Login failed";
-            });
+
+            } catch (error) {
+                console.error("LOGIN FLOW ERROR:", error);
+                localStorage.removeItem("token");
+                window.history.replaceState({}, document.title, window.location.pathname);
+
+                const msg = (error.message || "").toLowerCase();
+
+                if (msg.includes("invalid_grant")) {
+                    setStatus("This login session expired. Please click Sign in again.", "error");
+                } else if (msg.includes("token")) {
+                    setStatus("Authentication token could not be processed. Please try again.", "error");
+                } else if (msg.includes("role")) {
+                    setStatus("Your account was authenticated, but no authorized role was assigned.", "error");
+                } else {
+                    setStatus("Sign-in failed. Please try again.", "error");
+                }
+
+                setLoadingState(false);
+                return;
+            }
+
+            setLoadingState(false);
         }
     </script>
 </body>

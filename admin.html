@@ -1,183 +1,891 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            color: #1e293b;
+        }
+
+        .main-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: linear-gradient(180deg, #0f172a, #1e3a8a);
+            color: white;
+            padding: 28px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 8px 0 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .logo-box {
+            width: 110px;
+            height: 110px;
+            background: white;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+            overflow: hidden;
+        }
+
+        .logo-box img {
+            width: 82%;
+            height: 82%;
+            object-fit: contain;
+        }
+
+        .sidebar h2 {
+            font-size: 1.35rem;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar p {
+            text-align: center;
+            font-size: 0.92rem;
+            line-height: 1.7;
+            opacity: 0.92;
+            margin-bottom: 28px;
+        }
+
+        .sidebar-menu {
+            width: 100%;
+            display: grid;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .menu-item {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: white;
+            padding: 14px 16px;
+            border-radius: 14px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+        }
+
+        .menu-item.active {
+            background: white;
+            color: #0f172a;
+        }
+
+        .content {
+            flex: 1;
+            padding: 28px;
+        }
+
+        .dashboard {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .topbar {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .topbar h1 {
+            font-size: 2rem;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .topbar p {
+            color: #64748b;
+            font-size: 0.98rem;
+        }
+
+        .top-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 18px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        }
+
+        .btn-primary {
+            background: #0f172a;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #1e293b;
+            border: 1px solid #dbe3ee;
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #e2e8f0 !important;
+            color: #94a3b8 !important;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+            border: 1px solid #e2e8f0 !important;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: white;
+            border-radius: 20px;
+            padding: 24px 28px;
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.18);
+            margin-bottom: 24px;
+        }
+
+        .welcome-card h2 {
+            margin-bottom: 10px;
+            font-size: 1.6rem;
+        }
+
+        .welcome-card p {
+            opacity: 0.92;
+            line-height: 1.7;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 22px 18px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+            border: 1px solid #eef2f7;
+        }
+
+        .summary-card .label {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .summary-card .sub-note {
+            margin-top: 8px;
+            color: #64748b;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .risk-critical .value { color: #7f1d1d; }
+        .risk-high .value { color: #dc2626; }
+        .risk-medium .value { color: #ea580c; }
+        .risk-low .value { color: #16a34a; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+            border: 1px solid #eef2f7;
+        }
+
+        .panel h3 {
+            margin-bottom: 18px;
+            font-size: 1.2rem;
+            color: #0f172a;
+        }
+
+        .findings-panel {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
+            border: 1px solid #eef2f7;
+        }
+
+        .findings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .filter-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-box label {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .filter-box select {
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #dbe3ee;
+            background: white;
+            color: #1e293b;
+            font-size: 0.92rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            margin-top: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1150px;
+            display: none;
+        }
+
+        thead {
+            background: #f8fafc;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 14px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 0.95rem;
+            vertical-align: top;
+        }
+
+        th {
+            color: #334155;
+            font-weight: 700;
+        }
+
+        td {
+            color: #334155;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .badge-critical {
+            background: #7f1d1d;
+            color: white;
+        }
+
+        .badge-high {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-medium {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .badge-low {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+        }
+
+        .loading-card {
+            background: white;
+            padding: 28px 32px;
+            border-radius: 18px;
+            text-align: center;
+            min-width: 280px;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+        }
+
+        .spinner {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 16px;
+            border: 6px solid #e2e8f0;
+            border-top: 6px solid #1d4ed8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-card h4 {
+            color: #0f172a;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .loading-card p {
+            color: #64748b;
+            font-size: 0.94rem;
+        }
+
+        .empty-state {
+            color: #64748b;
+            padding: 10px 4px 0;
+            line-height: 1.7;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1400px) {
+            .summary-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                padding: 22px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .top-actions {
+                width: 100%;
+            }
+
+            .findings-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <h4 id="loadingTitle">Loading security findings</h4>
+            <p id="loadingText">Please wait while the dashboard retrieves AWS compliance results.</p>
+        </div>
+    </div>
 
-    <h2>Admin Dashboard</h2>
-    <h3 id="welcomeMessage"></h3>
+    <div class="main-layout">
+        <aside class="sidebar">
+            <div class="logo-box">
+                <img src="bcdr-logo.png.png" alt="BCDR Logo"
+                     onerror="this.style.display='none'; this.parentNode.innerHTML='BCDR'; this.parentNode.style.fontWeight='700'; this.parentNode.style.color='#0f172a';">
+            </div>
+            <h2>BCDR</h2>
+            <p>Cloud Security Monitoring Dashboard</p>
 
-    <p id="loginStatus"></p>
+            <div class="sidebar-menu">
+                <div class="menu-item active">Admin Panel</div>
+                <div class="menu-item">Security Scan</div>
+                <div class="menu-item">Findings & Reports</div>
+            </div>
+        </aside>
 
-    <button onclick="getMe()">Get My Info</button>
-    <p id="userInfo"></p>
+        <main class="content">
+            <div class="dashboard">
+                <div class="topbar">
+                    <div>
+                        <h1>Admin Dashboard</h1>
+                        <p>Cloud security monitoring, compliance insights, and findings visualization.</p>
+                    </div>
+                    <div class="top-actions">
+                        <button class="btn btn-secondary" onclick="getMe()">Get My Info</button>
+                        <button class="btn btn-primary" onclick="runScan()">Run Scan</button>
+                        <button id="viewBtn" class="btn btn-secondary" onclick="getFindings()" disabled>View Findings</button>
+                        <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
+                        <button class="btn btn-secondary" onclick="logout()">Logout</button>
+                    </div>
+                </div>
 
-    <hr>
+                <div class="welcome-card">
+                    <h2 id="welcomeMessage">Welcome, Admin</h2>
+                    <p id="userInfo">Loading user information...</p>
+                </div>
 
-    <button onclick="runScan()">Run Scan</button>
-    <button onclick="getFindings()">View Findings</button>
-    <button onclick="exportCSV()">Export CSV</button>
-    <button onclick="logout()">Logout</button>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="label">Scan Date</div>
+                        <div class="value" id="scanDateValue" style="font-size:1rem;">Not available</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">Total Results</div>
+                        <div class="value" id="totalResultsValue">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="label">Compliance Score</div>
+                        <div class="value" id="complianceScoreValue">0%</div>
+                        <div class="sub-note">Based on AWS security checks aligned with CIS best practices</div>
+                    </div>
+                    <div class="summary-card risk-critical">
+                        <div class="label">Critical Risk</div>
+                        <div class="value" id="criticalRiskValue">0</div>
+                    </div>
+                    <div class="summary-card risk-high">
+                        <div class="label">High Risk</div>
+                        <div class="value" id="highRiskValue">0</div>
+                    </div>
+                    <div class="summary-card risk-medium">
+                        <div class="label">Medium Risk</div>
+                        <div class="value" id="mediumRiskValue">0</div>
+                    </div>
+                    <div class="summary-card risk-low">
+                        <div class="label">Low Risk</div>
+                        <div class="value" id="lowRiskValue">0</div>
+                    </div>
+                </div>
 
-    <div id="status"></div>
+                <div class="charts-grid">
+                    <div class="panel">
+                        <h3>Findings by AWS Service</h3>
+                        <canvas id="serviceChart"></canvas>
+                    </div>
+
+                    <div class="panel">
+                        <h3>Risk Distribution</h3>
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="findings-panel">
+                    <div class="findings-header">
+                        <div>
+                            <h3>Detailed Security Findings</h3>
+                            <div class="empty-state" id="emptyState">
+                                No results loaded yet. Click <strong>Run Scan</strong> to start the scan, then click <strong>View Findings</strong> to display the results.
+                            </div>
+                        </div>
+
+                        <div class="filter-box">
+                            <label for="severityFilter">Filter by Severity:</label>
+                            <select id="severityFilter" onchange="filterSeverity(this.value)">
+                                <option value="all">All</option>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table id="findingsTable">
+                            <thead>
+                                <tr>
+                                    <th>Service</th>
+                                    <th>Resource</th>
+                                    <th>Issue</th>
+                                    <th>Severity</th>
+                                    <th>Recommendation</th>
+                                </tr>
+                            </thead>
+                            <tbody id="findingsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
-        const token = localStorage.getItem("token");
+        const COGNITO_DOMAIN = "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com";
+        const CLIENT_ID = "451a5hf6nd4btsiiftmi039hfv";
+        const LOGOUT_URI = "http://localhost:3000";
+        const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+
+        let token = localStorage.getItem("token");
+        let serviceChartInstance = null;
+        let riskChartInstance = null;
+        let scanCompleted = false;
+        let allResults = [];
 
         if (!token) {
             alert("You are not logged in");
             window.location.href = "index.html";
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get("code");
-
-        if (code) {
-            document.getElementById("loginStatus").innerText = "Login successful";
+        } else {
             getMe();
-            window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        function getMe() {
-            fetch("http://127.0.0.1:8000/me", {
+        function showLoading(title = "Loading security findings", text = "Please wait while the dashboard retrieves AWS compliance results.") {
+            document.getElementById("loadingTitle").innerText = title;
+            document.getElementById("loadingText").innerText = text;
+            document.getElementById("loadingOverlay").style.display = "flex";
+        }
+
+        function hideLoading() {
+            document.getElementById("loadingOverlay").style.display = "none";
+        }
+
+        async function fetchWithAuth(url) {
+            const response = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`
                 }
-            })
-            .then(async (res) => {
+            });
+
+            if (response.status === 401) {
+                alert("Session expired. Please sign in again.");
+                logout();
+                throw new Error("Unauthorized");
+            }
+
+            return response;
+        }
+
+        async function getMe() {
+            try {
+                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/me`);
                 const data = await res.json();
-                if (!res.ok) throw new Error(JSON.stringify(data));
-                return data;
-            })
-            .then((data) => {
-                const username = data.user.username;
-                const groups = data.user["cognito:groups"]?.join(", ") || "User";
 
+                if (!res.ok) throw new Error(data.detail || "Failed to get user info");
+
+                const username =
+                    data.user.username ||
+                    data.user["cognito:username"] ||
+                    "Unknown";
+                const groups = data.user["cognito:groups"] || [];
+
+                if (!groups.includes("Admin")) {
+                    alert("Access denied. Admin role required.");
+                    window.location.href = "index.html";
+                    return;
+                }
+
+                document.getElementById("welcomeMessage").innerText = `Welcome, ${groups.join(", ")}`;
                 document.getElementById("userInfo").innerText =
-                    `Logged in as: ${username} | Role: ${groups}`;
-
-                document.getElementById("welcomeMessage").innerText =
-                    `Welcome, ${groups}`;
-            })
-            .catch((err) => {
+                    `Logged in as: ${username} | Role: ${groups.join(", ")}`;
+            } catch (err) {
                 console.error("ME ERROR:", err);
                 document.getElementById("userInfo").innerText = "Error getting user info";
-            });
+            }
         }
 
-        function runScan() {
-            fetch("http://127.0.0.1:8000/scan", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            })
-            .then(async (res) => {
+        async function runScan() {
+            try {
+                showLoading(
+                    "Running cloud security scan",
+                    "Please wait while the dashboard retrieves and analyzes AWS findings."
+                );
+
+                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan`);
                 const data = await res.json();
-                if (!res.ok) throw new Error(JSON.stringify(data));
-                return data;
-            })
-            .then((data) => {
-                const summary = data.compliance_summary;
 
-                let findingsHtml = `
-                    <h3>Scan Summary</h3>
-                    <p><strong>Scan date:</strong> ${data.scan_date}</p>
-                    <p><strong>Total results:</strong> ${data.total_results}</p>
-                    <p><strong>Compliance score:</strong> ${summary.compliance_score}</p>
-                    <p><strong>High risk:</strong> ${summary.high_risk}</p>
-                    <p><strong>Medium risk:</strong> ${summary.medium_risk}</p>
-                    <p><strong>Low risk:</strong> ${summary.low_risk}</p>
-                    <h3>Service Findings</h3>
-                    <ul>
-                `;
+                if (!res.ok) throw new Error(data.detail || "Scan failed");
 
-                data.results.forEach(item => {
-                    findingsHtml += `
-                        <li>
-                            <strong>Service:</strong> ${item.service || "N/A"} |
-                            <strong>Resource:</strong> ${item.resource || "N/A"} |
-                            <strong>Issue:</strong> ${item.issue || "N/A"} |
-                            <strong>Severity:</strong> ${item.severity || "N/A"} |
-                            <strong>Status:</strong> ${item.status || "N/A"}
-                        </li>
-                    `;
-                });
-
-                findingsHtml += `</ul>`;
-                document.getElementById("status").innerHTML = findingsHtml;
-            })
-            .catch((err) => {
+                scanCompleted = true;
+                document.getElementById("viewBtn").disabled = false;
+                document.getElementById("emptyState").innerText =
+                    "Scan completed successfully. You can now click 'View Findings' to display the results.";
+            } catch (err) {
                 console.error("SCAN ERROR:", err);
-                document.getElementById("status").innerText = "Scan failed or access denied.";
+                alert("Scan failed or access denied.");
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function getFindings() {
+            if (!scanCompleted) {
+                alert("Please run the scan first.");
+                return;
+            }
+
+            try {
+                showLoading(
+                    "Loading security findings",
+                    "Please wait while the dashboard retrieves AWS compliance results."
+                );
+
+                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/findings`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || "Failed to load findings");
+
+                renderDashboard(data, "Findings loaded successfully.");
+            } catch (err) {
+                console.error("FINDINGS ERROR:", err);
+                alert("Failed to load findings.");
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function renderDashboard(data, message) {
+            const summary = data.compliance_summary || {};
+
+            allResults = data.results || [];
+
+            document.getElementById("scanDateValue").innerText = data.scan_date || "Not available";
+            document.getElementById("totalResultsValue").innerText = data.total_results ?? 0;
+            document.getElementById("complianceScoreValue").innerText = (summary.compliance_score ?? 0) + "%";
+            document.getElementById("criticalRiskValue").innerText = summary.critical_risk ?? 0;
+            document.getElementById("highRiskValue").innerText = summary.high_risk ?? 0;
+            document.getElementById("mediumRiskValue").innerText = summary.medium_risk ?? 0;
+            document.getElementById("lowRiskValue").innerText = summary.low_risk ?? 0;
+
+            renderServiceChart(allResults);
+            renderRiskChart(summary);
+            renderFindingsTable(allResults);
+
+            document.getElementById("emptyState").innerText = message;
+        }
+
+        function renderServiceChart(results) {
+            const counts = {};
+
+            results.forEach(item => {
+                const service = item.service || "Unknown";
+                counts[service] = (counts[service] || 0) + 1;
+            });
+
+            const labels = Object.keys(counts);
+            const values = Object.values(counts);
+            const ctx = document.getElementById("serviceChart").getContext("2d");
+
+            if (serviceChartInstance) {
+                serviceChartInstance.destroy();
+            }
+
+            serviceChartInstance = new Chart(ctx, {
+                type: "bar",
+                data: {
+                    labels,
+                    datasets: [{
+                        label: "Findings Count",
+                        data: values,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
             });
         }
 
-        function getFindings() {
-            fetch("http://127.0.0.1:8000/findings", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            })
-            .then(async (res) => {
-                const data = await res.json();
-                if (!res.ok) throw new Error(JSON.stringify(data));
-                return data;
-            })
-            .then((data) => {
-                const summary = data.compliance_summary;
+        function renderRiskChart(summary) {
+            const ctx = document.getElementById("riskChart").getContext("2d");
 
-                let findingsHtml = `
-                    <h3>Findings Summary</h3>
-                    <p><strong>Scan date:</strong> ${data.scan_date}</p>
-                    <p><strong>Total results:</strong> ${data.total_results}</p>
-                    <p><strong>Compliance score:</strong> ${summary.compliance_score}</p>
-                    <p><strong>High risk:</strong> ${summary.high_risk}</p>
-                    <p><strong>Medium risk:</strong> ${summary.medium_risk}</p>
-                    <p><strong>Low risk:</strong> ${summary.low_risk}</p>
-                    <h3>Service Findings</h3>
-                    <ul>
+            if (riskChartInstance) {
+                riskChartInstance.destroy();
+            }
+
+            riskChartInstance = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: ["Critical Risk", "High Risk", "Medium Risk", "Low Risk"],
+                    datasets: [{
+                        data: [
+                            summary.critical_risk ?? 0,
+                            summary.high_risk ?? 0,
+                            summary.medium_risk ?? 0,
+                            summary.low_risk ?? 0
+                        ],
+                        backgroundColor: ["#7f1d1d", "#dc2626", "#ea580c", "#16a34a"],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: "bottom" }
+                    }
+                }
+            });
+        }
+
+        function normalizeIssue(issue = "") {
+            const i = issue.toLowerCase();
+
+            if (i.includes("mfa")) {
+                return "IAM user has console access without MFA enabled";
+            }
+
+            return issue;
+        }
+
+        function getRecommendation(issue = "", service = "") {
+            const i = issue.toLowerCase();
+            const s = service.toLowerCase();
+
+            if (i.includes("mfa") || s === "iam") {
+                return "Enable MFA in AWS IAM → Users → Security Credentials";
+            }
+
+            if (i.includes("s3") || s === "s3") {
+                return "Disable public access and review bucket policy";
+            }
+
+            if (i.includes("cloudtrail") || s === "cloudtrail") {
+                return "Enable CloudTrail logging for monitoring and auditing";
+            }
+
+            if (i.includes("port") || i.includes("security group") || s === "ec2") {
+                return "Restrict inbound rules to trusted IP addresses only";
+            }
+
+            return "Review AWS configuration and apply CIS AWS security best practices";
+        }
+
+        function renderFindingsTable(results) {
+            const table = document.getElementById("findingsTable");
+            const tbody = document.getElementById("findingsTableBody");
+            tbody.innerHTML = "";
+
+            results.forEach(item => {
+                const tr = document.createElement("tr");
+                const severity = item.severity || "N/A";
+                const normalizedIssue = normalizeIssue(item.issue || "");
+
+                tr.innerHTML = `
+                    <td>${item.service || "N/A"}</td>
+                    <td>${item.resource || "N/A"}</td>
+                    <td>${normalizedIssue || "N/A"}</td>
+                    <td>${renderSeverityBadge(severity)}</td>
+                    <td>${getRecommendation(normalizedIssue, item.service || "")}</td>
                 `;
 
-                data.results.forEach(item => {
-                    findingsHtml += `
-                        <li>
-                            <strong>Service:</strong> ${item.service || "N/A"} |
-                            <strong>Resource:</strong> ${item.resource || "N/A"} |
-                            <strong>Issue:</strong> ${item.issue || "N/A"} |
-                            <strong>Severity:</strong> ${item.severity || "N/A"} |
-                            <strong>Status:</strong> ${item.status || "N/A"}
-                        </li>
-                    `;
-                });
-
-                findingsHtml += `</ul>`;
-                document.getElementById("status").innerHTML = findingsHtml;
-            })
-            .catch((err) => {
-                console.error("FINDINGS ERROR:", err);
-                document.getElementById("status").innerText = "Failed to load findings.";
+                tbody.appendChild(tr);
             });
+
+            table.style.display = "table";
         }
 
-        function exportCSV() {
-            fetch("http://127.0.0.1:8000/export", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            })
-            .then(async (res) => {
+        function renderSeverityBadge(severity) {
+            const s = severity.toLowerCase();
+
+            if (s === "critical") return `<span class="badge badge-critical">Critical</span>`;
+            if (s === "high") return `<span class="badge badge-high">High</span>`;
+            if (s === "medium") return `<span class="badge badge-medium">Medium</span>`;
+            if (s === "low") return `<span class="badge badge-low">Low</span>`;
+
+            return `<span class="badge">${severity}</span>`;
+        }
+
+        function filterSeverity(level) {
+            if (level === "all") {
+                renderFindingsTable(allResults);
+                return;
+            }
+
+            const filtered = allResults.filter(item =>
+                (item.severity || "").toLowerCase() === level
+            );
+
+            renderFindingsTable(filtered);
+        }
+
+        async function exportCSV() {
+            try {
+                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/export`);
+
                 if (!res.ok) {
                     const err = await res.text();
                     throw new Error(err);
                 }
-                return res.blob();
-            })
-            .then((blob) => {
+
+                const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
@@ -186,19 +894,20 @@
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
-            })
-            .catch((err) => {
+            } catch (err) {
                 console.error("EXPORT ERROR:", err);
-                document.getElementById("status").innerText = "CSV export failed.";
-            });
+                alert("CSV export failed.");
+            }
         }
 
         function logout() {
             localStorage.removeItem("token");
-            alert("Logged out successfully");
-            window.location.href = "index.html";
+
+            const logoutUrl =
+                `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
+
+            window.location.href = logoutUrl;
         }
     </script>
-
 </body>
 </html>
