@@ -191,7 +191,7 @@
 
         .summary-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
+            grid-template-columns: repeat(8, 1fr);
             gap: 18px;
             margin-bottom: 24px;
         }
@@ -227,10 +227,19 @@
         .risk-high .value { color: #dc2626; }
         .risk-medium .value { color: #ea580c; }
         .risk-low .value { color: #16a34a; }
+        .improvement-positive .value { color: #15803d; }
+        .improvement-negative .value { color: #b91c1c; }
 
         .charts-grid {
             display: grid;
             grid-template-columns: 1.15fr 0.85fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 24px;
             margin-bottom: 24px;
         }
@@ -247,6 +256,25 @@
             margin-bottom: 18px;
             font-size: 1.2rem;
             color: #0f172a;
+        }
+
+        .history-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-item .meta {
+            font-size: 0.92rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .history-item .open-btn {
+            margin-top: 8px;
         }
 
         .findings-panel {
@@ -286,18 +314,47 @@
             color: #1e293b;
             font-size: 0.92rem;
         }
-
         .table-wrap {
-            overflow-x: auto;
-            margin-top: 14px;
-        }
+    overflow: auto;
+    width: 100%;
+    max-height: 500px;
+    border-radius: 12px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1150px;
-            display: none;
-        }
+       table {
+    width: 100%;
+    min-width: 1600px;
+    border-collapse: collapse;
+}
+
+
+/* Sticky table header */
+thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    z-index: 5;
+}
+
+/* Freeze first column */
+th:first-child,
+td:first-child {
+    position: sticky;
+    left: 0;
+    background: #ffffff;
+    z-index: 4;
+}
+
+/* Keep first header cell above everything */
+thead th:first-child {
+    z-index: 6;
+    background: #f8fafc;
+}
+
+/* Keep group rows clean */
+.group-row td {
+    position: static !important;
+}
 
         thead {
             background: #f8fafc;
@@ -318,6 +375,13 @@
 
         td {
             color: #334155;
+        }
+
+        .group-row td {
+            background: #f8fafc;
+            font-weight: 800;
+            color: #0f172a;
+            border-top: 2px solid #e2e8f0;
         }
 
         .badge {
@@ -346,6 +410,22 @@
         .badge-low {
             background: #dcfce7;
             color: #15803d;
+        }
+
+        .rec-text {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .rec-link {
+            font-size: 0.85rem;
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .rec-link:hover {
+            text-decoration: underline;
         }
 
         .loading-overlay {
@@ -398,14 +478,15 @@
             100% { transform: rotate(360deg); }
         }
 
-        @media (max-width: 1400px) {
+        @media (max-width: 1500px) {
             .summary-grid {
                 grid-template-columns: repeat(4, 1fr);
             }
         }
 
         @media (max-width: 1200px) {
-            .charts-grid {
+            .charts-grid,
+            .history-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -450,6 +531,13 @@
                 grid-template-columns: 1fr;
             }
         }
+        .panel {
+    transition: transform 0.2s ease;
+}
+
+.panel:hover {
+    transform: translateY(-4px);
+}
     </style>
 </head>
 <body>
@@ -482,7 +570,7 @@
                 <div class="topbar">
                     <div>
                         <h1>Admin Dashboard</h1>
-                        <p>Cloud security monitoring, compliance insights, and findings visualization.</p>
+                        <p>This dashboard provides continuous monitoring of AWS security posture aligned with CIS best practices.</p>
                     </div>
                     <div class="top-actions">
                         <button class="btn btn-secondary" onclick="getMe()">Get My Info</button>
@@ -528,6 +616,10 @@
                         <div class="label">Low Risk</div>
                         <div class="value" id="lowRiskValue">0</div>
                     </div>
+                    <div class="summary-card" id="improvementCard">
+                        <div class="label">Improvement</div>
+                        <div class="value" id="improvementValue">0%</div>
+                    </div>
                 </div>
 
                 <div class="charts-grid">
@@ -542,6 +634,29 @@
                     </div>
                 </div>
 
+                <div class="history-grid">
+              <div class="panel">
+ 
+        <h3>Scan History</h3>
+        <div id="historyContainer" style="max-height: 300px; overflow-y: auto;">
+    <div id="historyList" class="empty-state">No scan history available yet.</div>
+
+    </div>
+
+    <div id="historyContainer" style="max-height:300px; overflow-y:auto; padding-right:8px;">
+        <div id="historyList" class="empty-state">
+        </div>
+        <button class="btn btn-secondary" onclick="toggleHistory()" style="padding:8px 12px;">
+            Hide History
+        </button>
+    </div>
+</div>
+                    <div class="panel">
+                        <h3>Scan Comparison</h3>
+                        <div id="comparisonText" class="empty-state">No previous scan available for comparison.</div>
+                    </div>
+                </div>
+
                 <div class="findings-panel">
                     <div class="findings-header">
                         <div>
@@ -552,6 +667,14 @@
                         </div>
 
                         <div class="filter-box">
+      <label>Service:</label>
+    <select id="serviceFilter" onchange="applyFilters()">
+        <option value="all">All</option>
+        <option value="IAM">IAM</option>
+        <option value="S3">S3</option>
+        <option value="EC2">EC2</option>
+        <option value="CloudTrail">CloudTrail</option>
+    </select>
                             <label for="severityFilter">Filter by Severity:</label>
                             <select id="severityFilter" onchange="filterSeverity(this.value)">
                                 <option value="all">All</option>
@@ -593,12 +716,14 @@
         let riskChartInstance = null;
         let scanCompleted = false;
         let allResults = [];
+        let historyVisible = true;
 
         if (!token) {
             alert("You are not logged in");
             window.location.href = "index.html";
         } else {
             getMe();
+            loadHistory();
         }
 
         function showLoading(title = "Loading security findings", text = "Please wait while the dashboard retrieves AWS compliance results.") {
@@ -609,6 +734,33 @@
 
         function hideLoading() {
             document.getElementById("loadingOverlay").style.display = "none";
+        }
+
+        function severityOrder(severity) {
+            const order = {
+                critical: 0,
+                high: 1,
+                medium: 2,
+                low: 3,
+                none: 4,
+                unknown: 5
+            };
+            return order[(severity || "").toLowerCase()] ?? 99;
+        }
+
+        function groupResults(results) {
+            const grouped = {};
+            results.forEach(item => {
+                const service = item.service || "Unknown";
+                if (!grouped[service]) grouped[service] = [];
+                grouped[service].push(item);
+            });
+
+            Object.keys(grouped).forEach(service => {
+                grouped[service].sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
+            });
+
+            return grouped;
         }
 
         async function fetchWithAuth(url) {
@@ -670,8 +822,8 @@
 
                 scanCompleted = true;
                 document.getElementById("viewBtn").disabled = false;
-                document.getElementById("emptyState").innerText =
-                    "Scan completed successfully. You can now click 'View Findings' to display the results.";
+                renderDashboard(data, "Scan completed successfully. Findings are ready.");
+                loadHistory();
             } catch (err) {
                 console.error("SCAN ERROR:", err);
                 alert("Scan failed or access denied.");
@@ -682,7 +834,27 @@
 
         async function getFindings() {
             if (!scanCompleted) {
-                alert("Please run the scan first.");
+                try {
+                    showLoading(
+                        "Loading latest findings",
+                        "Please wait while the dashboard loads the most recent scan results."
+                    );
+
+                    const res = await fetchWithAuth(`${BACKEND_BASE_URL}/findings`);
+                    const data = await res.json();
+
+                    if (!res.ok) throw new Error(data.detail || "Failed to load findings");
+
+                    renderDashboard(data, "Findings loaded successfully.");
+                    loadHistory();
+                    scanCompleted = true;
+                    document.getElementById("viewBtn").disabled = false;
+                } catch (err) {
+                    console.error("FINDINGS ERROR:", err);
+                    alert("Failed to load findings.");
+                } finally {
+                    hideLoading();
+                }
                 return;
             }
 
@@ -698,6 +870,7 @@
                 if (!res.ok) throw new Error(data.detail || "Failed to load findings");
 
                 renderDashboard(data, "Findings loaded successfully.");
+                loadHistory();
             } catch (err) {
                 console.error("FINDINGS ERROR:", err);
                 alert("Failed to load findings.");
@@ -708,8 +881,7 @@
 
         function renderDashboard(data, message) {
             const summary = data.compliance_summary || {};
-
-            allResults = data.results || [];
+            allResults = [...(data.results || [])].sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
 
             document.getElementById("scanDateValue").innerText = data.scan_date || "Not available";
             document.getElementById("totalResultsValue").innerText = data.total_results ?? 0;
@@ -719,11 +891,51 @@
             document.getElementById("mediumRiskValue").innerText = summary.medium_risk ?? 0;
             document.getElementById("lowRiskValue").innerText = summary.low_risk ?? 0;
 
+            const improvement = data.improvement_percentage ?? 0;
+            document.getElementById("improvementValue").innerText = `${improvement > 0 ? "+" : ""}${improvement}%`;
+
+            const improvementCard = document.getElementById("improvementCard");
+            improvementCard.classList.remove("improvement-positive", "improvement-negative");
+            if (improvement > 0) improvementCard.classList.add("improvement-positive");
+            if (improvement < 0) improvementCard.classList.add("improvement-negative");
+
+            if (data.comparison) {
+    const fixed =
+        data.comparison.fixed_count ??
+        data.comparison.fixed ??
+        0;
+
+    const added =
+        data.comparison.new_issues_count ??
+        data.comparison.new ??
+        0;
+
+    const improvement = data.improvement_percentage ?? 0;
+
+    document.getElementById("comparisonText").innerHTML = `
+        <div style="line-height:1.8;">
+            <strong>Scan Comparison Summary</strong><br>
+            Compliance Change: ${improvement > 0 ? "+" : ""}${improvement}%<br>
+            Fixed Issues: ${fixed}<br>
+            New Issues: ${added}<br>
+            ${
+                fixed === 0 && added === 0
+                ? "<span style='color:#64748b;'>No security changes detected since the previous scan.</span>"
+                : ""
+            }
+        </div>
+    `;
+} else {
+    document.getElementById("comparisonText").innerHTML =
+        "No previous scan available. Run an initial scan to enable comparison.";
+}
+
             renderServiceChart(allResults);
             renderRiskChart(summary);
             renderFindingsTable(allResults);
 
             document.getElementById("emptyState").innerText = message;
+            document.getElementById("findingsTable").style.display = "table";
         }
 
         function renderServiceChart(results) {
@@ -833,20 +1045,40 @@
             const tbody = document.getElementById("findingsTableBody");
             tbody.innerHTML = "";
 
-            results.forEach(item => {
-                const tr = document.createElement("tr");
-                const severity = item.severity || "N/A";
-                const normalizedIssue = normalizeIssue(item.issue || "");
+            const grouped = groupResults(results);
 
-                tr.innerHTML = `
-                    <td>${item.service || "N/A"}</td>
-                    <td>${item.resource || "N/A"}</td>
-                    <td>${normalizedIssue || "N/A"}</td>
-                    <td>${renderSeverityBadge(severity)}</td>
-                    <td>${getRecommendation(normalizedIssue, item.service || "")}</td>
-                `;
+            Object.keys(grouped).forEach(service => {
+                const groupRow = document.createElement("tr");
+                groupRow.className = "group-row";
+                groupRow.innerHTML = `<td colspan="5">${service}</td>`;
+                tbody.appendChild(groupRow);
 
-                tbody.appendChild(tr);
+                grouped[service].forEach(item => {
+                    const tr = document.createElement("tr");
+                    const severity = item.severity || "N/A";
+
+                    if ((severity || "").toLowerCase() === "critical") {
+    tr.style.background = "#fee2e2";
+    tr.style.borderLeft = "6px solid #b91c1c";
+}
+if ((severity || "").toLowerCase() === "high") {
+    tr.style.background = "#fff7ed";
+}
+                    const normalizedIssue = normalizeIssue(item.issue || "");
+
+                    tr.innerHTML = `
+                        <td>${item.service || "N/A"}</td>
+                        <td>${item.resource || "N/A"}</td>
+                        <td>${normalizedIssue || "N/A"}</td>
+                        <td>${renderSeverityBadge(severity)}</td>
+                        <td>
+                            <span class="rec-text">${getRecommendation(normalizedIssue, item.service || "")}</span>
+                            ${item.recommendation_link ? `<a class="rec-link" href="${item.recommendation_link}" target="_blank">Open guide</a>` : ""}
+                        </td>
+                    `;
+
+                    tbody.appendChild(tr);
+                });
             });
 
             table.style.display = "table";
@@ -876,6 +1108,104 @@
             renderFindingsTable(filtered);
         }
 
+ function applyFilters() {
+    const serviceFilter = document.getElementById("serviceFilter").value;
+    const severityFilter = document.getElementById("severityFilter").value;
+
+    let filtered = allResults.filter(item => {
+        const serviceMatch =
+            serviceFilter === "all" ||
+            item.service === serviceFilter;
+
+        const severityMatch =
+            severityFilter === "all" ||
+            (item.severity || "").toLowerCase() === severityFilter;
+
+        return serviceMatch && severityMatch;
+    });
+
+    filtered.sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
+
+    renderFindingsTable(filtered);
+}
+
+        function toggleHistory() {
+    const container = document.getElementById("historyContainer");
+    const button = event.target;
+
+    historyVisible = !historyVisible;
+
+    if (historyVisible) {
+        container.style.display = "block";
+        button.innerText = "Hide History";
+    } else {
+        container.style.display = "none";
+        button.innerText = "Show History";
+    }
+}
+
+        async function loadHistory() {
+    try {
+        const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history`);
+        const data = await res.json();
+
+        const historyList = document.getElementById("historyList");
+
+        if (!data.history || data.history.length === 0) {
+            historyList.innerText = "No scan history available yet.";
+            return;
+        }
+
+        historyList.innerHTML = data.history.map(item => {
+            const score =
+                item.compliance_score ??
+                item.compliance_summary?.compliance_score ??
+                0;
+
+            return `
+                <div class="history-item">
+                    <strong>${item.scan_date}</strong>
+                    <div class="meta">
+                        Compliance Score: ${score}% |
+                        Total Results: ${item.total_results ?? 0} |
+                        Improvement: ${item.improvement_percentage ?? 0}%
+                    </div>
+                    <button class="btn btn-secondary open-btn"
+                        onclick="loadSpecificScan('${item.scan_id}')">
+                        Open Scan
+                    </button>
+                </div>
+            `;
+        }).join("");
+    } catch (err) {
+        document.getElementById("historyList").innerText =
+            "Failed to load scan history.";
+    }
+} 
+    
+        async function loadSpecificScan(scanId) {
+            try {
+                showLoading("Opening saved scan", "Loading selected scan from history.");
+
+                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history/${scanId}`);
+                const data = await res.json();
+
+                hideLoading();
+
+                if (data.message === "Scan not found") {
+                    alert("Scan not found.");
+                    return;
+                }
+
+                renderDashboard(data, `Loaded previous scan from ${data.scan_date}`);
+                scanCompleted = true;
+                document.getElementById("viewBtn").disabled = false;
+            } catch (err) {
+                hideLoading();
+                alert("Failed to open selected scan.");
+            }
+        }
+
         async function exportCSV() {
             try {
                 const res = await fetchWithAuth(`${BACKEND_BASE_URL}/export`);
@@ -887,9 +1217,13 @@
 
                 const blob = await res.blob();
                 const url = window.URL.createObjectURL(blob);
+                const disposition = res.headers.get("Content-Disposition") || "";
+                const match = disposition.match(/filename=([^;]+)/);
+                const filename = match ? match[1].replace(/"/g, "") : "cloud_security_report.csv";
+
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = "cloud_security_report.csv";
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -900,12 +1234,11 @@
             }
         }
 
+
         function logout() {
             localStorage.removeItem("token");
-
             const logoutUrl =
                 `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
-
             window.location.href = logoutUrl;
         }
     </script>
