@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from datetime import datetime
@@ -14,14 +14,13 @@ from auth_cognito import verify_token, require_admin, require_admin_or_auditor
 
 app = FastAPI()
 
-# ✅ FIXED CORS (IMPORTANT FOR CSV NAME)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"],  # 🔥 REQUIRED FIX
+    expose_headers=["Content-Disposition"],
 )
 
 app.include_router(auth_router)
@@ -30,7 +29,6 @@ SCAN_HISTORY_FILE = "scan_history.json"
 latest_scan_cache = None
 
 
-# ================== HELPERS ==================
 def severity_rank(severity):
     return {
         "Critical": 0,
@@ -44,8 +42,8 @@ def severity_rank(severity):
 def recommendation_link(service):
     return {
         "IAM": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html",
-        "S3": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html",
-        "EC2": "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html",
+        "S3": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access.html",
+        "EC2": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html",
         "CloudTrail": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-create-and-update-a-trail.html",
     }.get(service, "#")
 
@@ -62,7 +60,7 @@ def group_and_sort(results):
         grouped.setdefault(r["service"], []).append(r)
 
     for service in grouped:
-        grouped[service].sort(key=lambda x: severity_rank(x["severity"]))
+        grouped[service].sort(key=lambda x: severity_rank(x.get("severity", "None")))
 
     return grouped
 
@@ -74,12 +72,15 @@ def flatten(grouped):
     return flat
 
 
-# ================== HISTORY ==================
 def load_history():
     if not os.path.exists(SCAN_HISTORY_FILE):
         return []
-    with open(SCAN_HISTORY_FILE, "r") as f:
-        return json.load(f)
+
+    try:
+        with open(SCAN_HISTORY_FILE, "r") as f:
+            return json.load(f)
+    except Exception:
+        return []
 
 
 def save_history(data):
@@ -97,12 +98,22 @@ def compare(old, new):
     }
 
 
-# ================== MAIN SCAN ==================
 def run_scan_logic():
+    print("Starting IAM scan...")
     iam = check_iam_mfa()
+    print("IAM scan finished.")
+
+    print("Starting S3 scan...")
     s3 = check_s3_buckets()
+    print("S3 scan finished.")
+
+    print("Starting EC2 scan...")
     ec2 = check_ec2_security_groups()
+    print("EC2 scan finished.")
+
+    print("Starting CloudTrail scan...")
     cloudtrail = check_cloudtrail()
+    print("CloudTrail scan finished.")
 
     results = enrich_results(iam + s3 + ec2 + cloudtrail)
 
@@ -114,8 +125,8 @@ def run_scan_logic():
     history = load_history()
     prev = history[-1] if history else None
 
-    improvement = 20
-    comparison = {"fixed": 3,"new": 0}
+    improvement = 0
+    comparison = {"fixed": 0, "new": 0}
 
     if prev:
         old_score = prev.get("compliance_summary", {}).get("compliance_score", 0)
@@ -126,22 +137,22 @@ def run_scan_logic():
 
     scan = {
         "scan_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
-        "scan_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "scan_date": datetime.now().strftime("%Y-%m-%d"),
         "results": sorted_results,
         "grouped_results": grouped,
         "compliance_summary": compliance,
         "total_results": len(sorted_results),
-        "improvement_percentage": 20,
-"comparison": {"fixed": 3, "new": 0},
+        "improvement_percentage": improvement,
+        "comparison": comparison,
     }
 
     history.append(scan)
     save_history(history)
 
+    print("Full scan finished successfully.")
     return scan
 
 
-# ================== ROUTES ==================
 @app.get("/")
 def home():
     return {"message": "BCDR running"}
@@ -164,7 +175,12 @@ def findings(user=Depends(require_admin_or_auditor)):
     global latest_scan_cache
 
     if not latest_scan_cache:
-        latest_scan_cache = run_scan_logic()
+        history = load_history()
+
+        if not history:
+            raise HTTPException(status_code=404, detail="No scan available")
+
+        latest_scan_cache = history[-1]
 
     return latest_scan_cache
 
@@ -185,13 +201,17 @@ def get_scan_by_id(scan_id: str, user=Depends(require_admin_or_auditor)):
     return {"message": "Scan not found"}
 
 
-# ================== EXPORT ==================
 @app.get("/export")
 def export(user=Depends(require_admin_or_auditor)):
     global latest_scan_cache
 
     if not latest_scan_cache:
-        latest_scan_cache = run_scan_logic()
+        history = load_history()
+
+        if not history:
+            raise HTTPException(status_code=404, detail="No scan available")
+
+        latest_scan_cache = history[-1]
 
     filename = datetime.now().strftime("%Y%m%d_%H%M%S")
 
@@ -206,12 +226,12 @@ def export(user=Depends(require_admin_or_auditor)):
     for r in latest_scan_cache["results"]:
         writer.writerow([
             latest_scan_cache["scan_date"],
-            r["service"],
-            r["resource"],
-            r["issue"],
-            r["severity"],
-            r["status"],
-            r["recommendation_link"]
+            r.get("service", ""),
+            r.get("resource", ""),
+            r.get("issue", ""),
+            r.get("severity", ""),
+            r.get("status", ""),
+            r.get("recommendation", "")
         ])
 
     output.seek(0)

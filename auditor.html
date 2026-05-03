@@ -722,474 +722,407 @@ thead th:first-child {
         </main>
     </div>
 
-    <script>
-        const COGNITO_DOMAIN = "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com";
-        const CLIENT_ID = "451a5hf6nd4btsiiftmi039hfv";
-        const LOGOUT_URI = "http://localhost:3000";
-        const BACKEND_BASE_URL = "http://127.0.0.1:8000";
+  <script>
+    const COGNITO_DOMAIN = "https://eu-west-1toqpgdlc8.auth.eu-west-1.amazoncognito.com";
+    const CLIENT_ID = "451a5hf6nd4btsiiftmi039hfv";
+    const LOGOUT_URI = "http://localhost:3000";
+    const BACKEND_BASE_URL = "http://127.0.0.1:8000";
 
-        let token = localStorage.getItem("token");
-        let serviceChartInstance = null;
-        let riskChartInstance = null;
-        let allResults = [];
+    let token = localStorage.getItem("token");
+    let serviceChartInstance = null;
+    let riskChartInstance = null;
+    let allResults = [];
 
-        if (!token) {
-            alert("You are not logged in");
-            window.location.href = "index.html";
-        } else {
-            getMe();
-            loadHistory();
+    if (!token) {
+        alert("You are not logged in");
+        window.location.href = "index.html";
+    } else {
+        getMe();
+        loadHistory();
+    }
+
+    function showLoading() {
+        document.getElementById("loadingOverlay").style.display = "flex";
+    }
+
+    function hideLoading() {
+        document.getElementById("loadingOverlay").style.display = "none";
+    }
+
+    function severityOrder(severity) {
+        const order = { critical: 0, high: 1, medium: 2, low: 3, none: 4, unknown: 5 };
+        return order[(severity || "").toLowerCase()] ?? 99;
+    }
+
+    function groupResults(results) {
+        const grouped = {};
+        results.forEach(item => {
+            const service = item.service || "Unknown";
+            if (!grouped[service]) grouped[service] = [];
+            grouped[service].push(item);
+        });
+
+        Object.keys(grouped).forEach(service => {
+            grouped[service].sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
+        });
+
+        return grouped;
+    }
+
+    async function fetchWithAuth(url) {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (response.status === 401) {
+            alert("Session expired. Please sign in again.");
+            logout();
+            throw new Error("Unauthorized");
         }
 
-        function showLoading() {
-            document.getElementById("loadingOverlay").style.display = "flex";
-        }
+        return response;
+    }
 
-        function hideLoading() {
-            document.getElementById("loadingOverlay").style.display = "none";
-        }
+    async function getMe() {
+        try {
+            const res = await fetchWithAuth(`${BACKEND_BASE_URL}/me`);
+            const data = await res.json();
 
-        function severityOrder(severity) {
-            const order = {
-                critical: 0,
-                high: 1,
-                medium: 2,
-                low: 3,
-                none: 4,
-                unknown: 5
-            };
-            return order[(severity || "").toLowerCase()] ?? 99;
-        }
+            if (!res.ok) throw new Error(data.detail || "Failed to get user info");
 
-        function groupResults(results) {
-            const grouped = {};
-            results.forEach(item => {
-                const service = item.service || "Unknown";
-                if (!grouped[service]) grouped[service] = [];
-                grouped[service].push(item);
-            });
+            const username =
+                data.user.username ||
+                data.user["cognito:username"] ||
+                "Unknown";
 
-            Object.keys(grouped).forEach(service => {
-                grouped[service].sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
-            });
+            const groups = data.user["cognito:groups"] || [];
 
-            return grouped;
-        }
-
-        async function fetchWithAuth(url) {
-            const response = await fetch(url, {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (response.status === 401) {
-                alert("Session expired. Please sign in again.");
-                logout();
-                throw new Error("Unauthorized");
-            }
-
-            return response;
-        }
-
-        async function getMe() {
-            try {
-                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/me`);
-                const data = await res.json();
-
-                if (!res.ok) throw new Error(data.detail || "Failed to get user info");
-
-                const username =
-                    data.user.username ||
-                    data.user["cognito:username"] ||
-                    "Unknown";
-                const groups = data.user["cognito:groups"] || [];
-
-                if (!groups.includes("Auditor")) {
-                    alert("Access denied. Auditor role required.");
-                    window.location.href = "index.html";
-                    return;
-                }
-
-                document.getElementById("welcomeMessage").innerText = `Welcome, ${groups.join(", ")}`;
-                document.getElementById("userInfo").innerText =
-                    `Logged in as: ${username} | Role: ${groups.join(", ")}`;
-            } catch (err) {
-                console.error("ME ERROR:", err);
-                document.getElementById("userInfo").innerText = "Error getting user info";
-            }
-        }
-
-        async function getFindings() {
-            try {
-                showLoading();
-
-                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/findings`);
-                const data = await res.json();
-
-                if (!res.ok) throw new Error(data.detail || "Failed to load findings");
-
-                renderDashboard(data, "Findings loaded successfully.");
-                loadHistory();
-            } catch (err) {
-                console.error("FINDINGS ERROR:", err);
-                alert("Failed to load findings.");
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function renderDashboard(data, message) {
-            const summary = data.compliance_summary || {};
-            allResults = [...(data.results || [])].sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
-
-            document.getElementById("scanDateValue").innerText = data.scan_date || "Not available";
-            document.getElementById("totalResultsValue").innerText = data.total_results ?? 0;
-            document.getElementById("complianceScoreValue").innerText = (summary.compliance_score ?? 0) + "%";
-            document.getElementById("criticalRiskValue").innerText = summary.critical_risk ?? 0;
-            document.getElementById("highRiskValue").innerText = summary.high_risk ?? 0;
-            document.getElementById("mediumRiskValue").innerText = summary.medium_risk ?? 0;
-            document.getElementById("lowRiskValue").innerText = summary.low_risk ?? 0;
-
-            const improvement = data.improvement_percentage ?? 0;
-            document.getElementById("improvementValue").innerText = `${improvement > 0 ? "+" : ""}${improvement}%`;
-
-            const improvementCard = document.getElementById("improvementCard");
-            improvementCard.classList.remove("improvement-positive", "improvement-negative");
-            if (improvement > 0) improvementCard.classList.add("improvement-positive");
-            if (improvement < 0) improvementCard.classList.add("improvement-negative");
-
-            if (data.comparison) {
-    const fixed =
-        data.comparison.fixed_count ??
-        data.comparison.fixed ??
-        0;
-
-    const added =
-        data.comparison.new_issues_count ??
-        data.comparison.new ??
-        0;
-
-    const improvement = data.improvement_percentage ?? 0;
-
-    document.getElementById("comparisonText").innerHTML = `
-        <div style="line-height:1.8;">
-            <strong>Scan Comparison Summary</strong><br>
-            Compliance Change: ${improvement > 0 ? "+" : ""}${improvement}%<br>
-            Fixed Issues: ${fixed}<br>
-            New Issues: ${added}<br>
-            ${
-                fixed === 0 && added === 0
-                ? "<span style='color:#64748b;'>No security changes detected since the previous scan.</span>"
-                : ""
-            }
-        </div>
-    `;
-} else {
-    document.getElementById("comparisonText").innerHTML =
-        "No previous scan available. Run an initial scan to enable comparison.";
-}
-
-            renderServiceChart(allResults);
-            renderRiskChart(summary);
-            renderFindingsTable(allResults);
-
-            document.getElementById("emptyState").innerText = message;
-            document.getElementById("findingsTable").style.display = "table";
-        }
-
-        function renderServiceChart(results) {
-            const counts = {};
-
-            results.forEach(item => {
-                const service = item.service || "Unknown";
-                counts[service] = (counts[service] || 0) + 1;
-            });
-
-            const labels = Object.keys(counts);
-            const values = Object.values(counts);
-            const ctx = document.getElementById("serviceChart").getContext("2d");
-
-            if (serviceChartInstance) {
-                serviceChartInstance.destroy();
-            }
-
-            serviceChartInstance = new Chart(ctx, {
-                type: "bar",
-                data: {
-                    labels,
-                    datasets: [{
-                        label: "Findings Count",
-                        data: values,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { beginAtZero: true }
-                    }
-                }
-            });
-        }
-
-        function renderRiskChart(summary) {
-            const ctx = document.getElementById("riskChart").getContext("2d");
-
-            if (riskChartInstance) {
-                riskChartInstance.destroy();
-            }
-
-            riskChartInstance = new Chart(ctx, {
-                type: "doughnut",
-                data: {
-                    labels: ["Critical Risk", "High Risk", "Medium Risk", "Low Risk"],
-                    datasets: [{
-                        data: [
-                            summary.critical_risk ?? 0,
-                            summary.high_risk ?? 0,
-                            summary.medium_risk ?? 0,
-                            summary.low_risk ?? 0
-                        ],
-                        backgroundColor: ["#7f1d1d", "#dc2626", "#ea580c", "#16a34a"],
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: { position: "bottom" }
-                    }
-                }
-            });
-        }
-
-        function normalizeIssue(issue = "") {
-            const i = issue.toLowerCase();
-
-            if (i.includes("mfa")) {
-                return "IAM user has console access without MFA enabled";
-            }
-
-            return issue;
-        }
-
-        function getRecommendation(issue = "", service = "") {
-            const i = issue.toLowerCase();
-            const s = service.toLowerCase();
-
-            if (i.includes("mfa") || s === "iam") {
-                return "Enable MFA in AWS IAM → Users → Security Credentials";
-            }
-
-            if (i.includes("s3") || s === "s3") {
-                return "Disable public access and review bucket policy";
-            }
-
-            if (i.includes("cloudtrail") || s === "cloudtrail") {
-                return "Enable CloudTrail logging for monitoring and auditing";
-            }
-
-            if (i.includes("port") || i.includes("security group") || s === "ec2") {
-                return "Restrict inbound rules to trusted IP addresses only";
-            }
-
-            return "Review AWS configuration and apply CIS AWS security best practices";
-        }
-
-        function renderFindingsTable(results) {
-            const tbody = document.getElementById("findingsTableBody");
-            tbody.innerHTML = "";
-
-            const grouped = groupResults(results);
-
-            Object.keys(grouped).forEach(service => {
-                const groupRow = document.createElement("tr");
-                groupRow.className = "group-row";
-                groupRow.innerHTML = `<td colspan="6">${service}</td>`;
-                tbody.appendChild(groupRow);
-
-                grouped[service].forEach(item => {
-                    const tr = document.createElement("tr");
-                    const severity = item.severity || "N/A";
-
-                                   if ((severity || "").toLowerCase() === "critical") {
-    tr.style.background = "#fee2e2";
-    tr.style.borderLeft = "6px solid #b91c1c";
-}
-                    const status = item.status || "N/A";
-                    const normalizedIssue = normalizeIssue(item.issue || "");
-
-                    tr.innerHTML = `
-                        <td>${item.service || "N/A"}</td>
-                        <td>${item.resource || "N/A"}</td>
-                        <td>${normalizedIssue || "N/A"}</td>
-                        <td>${renderSeverityBadge(severity)}</td>
-                        <td>${renderStatusBadge(status)}</td>
-                        <td>
-                            <span class="rec-text">${getRecommendation(normalizedIssue, item.service || "")}</span>
-                            ${item.recommendation_link ? `<a class="rec-link" href="${item.recommendation_link}" target="_blank">Open guide</a>` : ""}
-                        </td>
-                    `;
-
-                    tbody.appendChild(tr);
-                });
-            });
-        }
-
-        function renderSeverityBadge(severity) {
-            const s = severity.toLowerCase();
-
-            if (s === "critical") return `<span class="badge badge-critical">Critical</span>`;
-            if (s === "high") return `<span class="badge badge-high">High</span>`;
-            if (s === "medium") return `<span class="badge badge-medium">Medium</span>`;
-            if (s === "low") return `<span class="badge badge-low">Low</span>`;
-
-            return `<span class="badge">${severity}</span>`;
-        }
-
-        function renderStatusBadge(status) {
-            const s = status.toLowerCase();
-
-            if (s === "pass") return `<span class="badge badge-pass">PASS</span>`;
-            if (s === "fail") return `<span class="badge badge-fail">FAIL</span>`;
-
-            return `<span class="badge">${status}</span>`;
-        }
-
-        function filterSeverity(level) {
-            if (level === "all") {
-                renderFindingsTable(allResults);
+            if (!groups.includes("Auditor")) {
+                alert("Access denied. Auditor role required.");
+                window.location.href = "index.html";
                 return;
             }
 
-            const filtered = allResults.filter(item =>
-                (item.severity || "").toLowerCase() === level
-            );
+            document.getElementById("welcomeMessage").innerText = "Welcome, Auditor";
+            document.getElementById("userInfo").innerText =
+                `Logged in as: ${username} | Role: ${groups.join(", ")}`;
+        } catch (err) {
+            console.error("ME ERROR:", err);
+            document.getElementById("userInfo").innerText = "Error getting user info";
+        }
+    }
 
-            renderFindingsTable(filtered);
+    async function getFindings() {
+        try {
+            showLoading();
+
+            const res = await fetchWithAuth(`${BACKEND_BASE_URL}/findings`);
+            const data = await res.json();
+
+            if (!res.ok) throw new Error(data.detail || "Failed to load findings");
+
+            renderDashboard(data, "Findings loaded successfully.");
+            loadHistory();
+        } catch (err) {
+            console.error("FINDINGS ERROR:", err);
+            alert("No scan available. Please ask an Admin to run a scan first.");
+        } finally {
+            hideLoading();
+        }
+    }
+
+    function renderDashboard(data, message) {
+        const summary = data.compliance_summary || {};
+        allResults = [...(data.results || [])].sort(
+            (a, b) => severityOrder(a.severity) - severityOrder(b.severity)
+        );
+
+        document.getElementById("scanDateValue").innerText = data.scan_date || "Not available";
+        document.getElementById("totalResultsValue").innerText = data.total_results ?? 0;
+        document.getElementById("complianceScoreValue").innerText = (summary.compliance_score ?? 0) + "%";
+
+        document.getElementById("criticalRiskValue").innerText =
+            summary.critical_risk ?? summary.critical ?? 0;
+
+        document.getElementById("highRiskValue").innerText =
+            summary.high_risk ?? summary.high ?? 0;
+
+        document.getElementById("mediumRiskValue").innerText =
+            summary.medium_risk ?? summary.medium ?? 0;
+
+        document.getElementById("lowRiskValue").innerText =
+            summary.low_risk ?? summary.low ?? 0;
+
+        const improvement = data.improvement_percentage ?? 0;
+        document.getElementById("improvementValue").innerText =
+            `${improvement > 0 ? "+" : ""}${improvement}%`;
+
+        const improvementCard = document.getElementById("improvementCard");
+        improvementCard.classList.remove("improvement-positive", "improvement-negative");
+        if (improvement > 0) improvementCard.classList.add("improvement-positive");
+        if (improvement < 0) improvementCard.classList.add("improvement-negative");
+
+        if (data.comparison) {
+            const fixed = data.comparison.fixed_count ?? data.comparison.fixed ?? 0;
+            const added = data.comparison.new_issues_count ?? data.comparison.new ?? 0;
+
+            document.getElementById("comparisonText").innerHTML = `
+                <div style="line-height:1.8;">
+                    <strong>Scan Comparison Summary</strong><br>
+                    Compliance Change: ${improvement > 0 ? "+" : ""}${improvement}%<br>
+                    Fixed Issues: ${fixed}<br>
+                    New Issues: ${added}<br>
+                    ${
+                        fixed === 0 && added === 0
+                        ? "<span style='color:#64748b;'>No security changes detected since the previous scan.</span>"
+                        : ""
+                    }
+                </div>
+            `;
+        } else {
+            document.getElementById("comparisonText").innerHTML =
+                "No previous scan available. Run an initial scan to enable comparison.";
         }
 
-        function applyFilters() {
-    const serviceFilter = document.getElementById("serviceFilter").value;
-    const severityFilter = document.getElementById("severityFilter").value;
+        renderServiceChart(allResults);
+        renderRiskChart(summary);
+        renderFindingsTable(allResults);
 
-    let filtered = allResults.filter(item => {
-        const serviceMatch =
-            serviceFilter === "all" ||
-            item.service === serviceFilter;
+        document.getElementById("emptyState").innerText = message;
+        document.getElementById("findingsTable").style.display = "table";
+    }
 
-        const severityMatch =
-            severityFilter === "all" ||
-            (item.severity || "").toLowerCase() === severityFilter;
+    function renderServiceChart(results) {
+        const counts = {};
 
-        return serviceMatch && severityMatch;
-    });
+        results.forEach(item => {
+            const service = item.service || "Unknown";
+            counts[service] = (counts[service] || 0) + 1;
+        });
 
-    filtered.sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
+        const labels = Object.keys(counts);
+        const values = Object.values(counts);
+        const ctx = document.getElementById("serviceChart").getContext("2d");
 
-    renderFindingsTable(filtered);
-}
+        if (serviceChartInstance) serviceChartInstance.destroy();
 
-        async function loadHistory() {
-            try {
-                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history`);
-                const data = await res.json();
+        serviceChartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels,
+                datasets: [{ label: "Findings Count", data: values, borderWidth: 1 }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
 
-                const historyList = document.getElementById("historyList");
+    function renderRiskChart(summary) {
+        const ctx = document.getElementById("riskChart").getContext("2d");
 
-                if (!data.history || data.history.length === 0) {
-                    historyList.innerText = "No scan history available yet.";
-                    return;
+        if (riskChartInstance) riskChartInstance.destroy();
+
+        riskChartInstance = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Critical Risk", "High Risk", "Medium Risk", "Low Risk"],
+                datasets: [{
+                    data: [
+                        summary.critical_risk ?? summary.critical ?? 0,
+                        summary.high_risk ?? summary.high ?? 0,
+                        summary.medium_risk ?? summary.medium ?? 0,
+                        summary.low_risk ?? summary.low ?? 0
+                    ],
+                    backgroundColor: ["#7f1d1d", "#dc2626", "#ea580c", "#16a34a"],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: "bottom" } }
+            }
+        });
+    }
+
+    function renderFindingsTable(results) {
+        const tbody = document.getElementById("findingsTableBody");
+        tbody.innerHTML = "";
+
+        const grouped = groupResults(results);
+
+        Object.keys(grouped).forEach(service => {
+            const groupRow = document.createElement("tr");
+            groupRow.className = "group-row";
+            groupRow.innerHTML = `<td colspan="6">${service}</td>`;
+            tbody.appendChild(groupRow);
+
+            grouped[service].forEach(item => {
+                const tr = document.createElement("tr");
+                const severity = item.severity || "N/A";
+                const status = item.status || "N/A";
+
+                if ((severity || "").toLowerCase() === "critical") {
+                    tr.style.background = "#fee2e2";
+                    tr.style.borderLeft = "6px solid #b91c1c";
                 }
 
-               historyList.innerHTML = data.history.map(item => {
-    const score =
-        item.compliance_score ??
-        item.compliance_summary?.compliance_score ??
-        0;
+                tr.innerHTML = `
+                    <td>${item.service || "N/A"}</td>
+                    <td>${item.resource || "N/A"}</td>
+                    <td>${item.issue || "N/A"}</td>
+                    <td>${renderSeverityBadge(severity)}</td>
+                    <td>${renderStatusBadge(status)}</td>
+                    <td>
+                        <span class="rec-text">${item.recommendation || "Review AWS configuration and apply CIS AWS security best practices."}</span>
+                        ${
+                            item.recommendation_link && item.recommendation_link !== "#"
+                            ? `<a class="rec-link" href="${item.recommendation_link}" target="_blank">Open guide</a>`
+                            : ""
+                        }
+                    </td>
+                `;
 
-    return `
-        <div class="history-item">
-            <strong>${item.scan_date}</strong>
-            <div class="meta">
-                Compliance Score: ${score}% |
-                Total Results: ${item.total_results} |
-                Improvement: ${item.improvement_percentage > 0 ? "+" : ""}${item.improvement_percentage}%
-            </div>
-            <button class="btn btn-secondary open-btn"
-                onclick="loadSpecificScan('${item.scan_id}')">
-                Open Scan
-            </button>
-        </div>
-    `;
-}).join("");
-            } catch (err) {
-                document.getElementById("historyList").innerText = "Failed to load scan history.";
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function renderSeverityBadge(severity) {
+        const s = (severity || "").toLowerCase();
+
+        if (s === "critical") return `<span class="badge badge-critical">Critical</span>`;
+        if (s === "high") return `<span class="badge badge-high">High</span>`;
+        if (s === "medium") return `<span class="badge badge-medium">Medium</span>`;
+        if (s === "low") return `<span class="badge badge-low">Low</span>`;
+
+        return `<span class="badge">${severity}</span>`;
+    }
+
+    function renderStatusBadge(status) {
+        const s = (status || "").toLowerCase();
+
+        if (s === "pass") return `<span class="badge badge-pass">PASS</span>`;
+        if (s === "fail") return `<span class="badge badge-fail">FAIL</span>`;
+
+        return `<span class="badge">${status}</span>`;
+    }
+
+    function applyFilters() {
+        const serviceFilter = document.getElementById("serviceFilter").value;
+        const severityFilter = document.getElementById("severityFilter").value;
+
+        let filtered = allResults.filter(item => {
+            const serviceMatch =
+                serviceFilter === "all" ||
+                item.service === serviceFilter;
+
+            const severityMatch =
+                severityFilter === "all" ||
+                (item.severity || "").toLowerCase() === severityFilter;
+
+            return serviceMatch && severityMatch;
+        });
+
+        filtered.sort((a, b) => severityOrder(a.severity) - severityOrder(b.severity));
+        renderFindingsTable(filtered);
+    }
+
+    async function loadHistory() {
+        try {
+            const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history`);
+            const data = await res.json();
+
+            const historyList = document.getElementById("historyList");
+
+            if (!data.history || data.history.length === 0) {
+                historyList.innerText = "No scan history available yet.";
+                return;
             }
+
+            historyList.innerHTML = data.history.map(item => {
+                const score =
+                    item.compliance_score ??
+                    item.compliance_summary?.compliance_score ??
+                    0;
+
+                return `
+                    <div class="history-item">
+                        <strong>${item.scan_date}</strong>
+                        <div class="meta">
+                            Compliance Score: ${score}% |
+                            Total Results: ${item.total_results ?? 0} |
+                            Improvement: ${item.improvement_percentage ?? 0}%
+                        </div>
+                        <button class="btn btn-secondary open-btn"
+                            onclick="loadSpecificScan('${item.scan_id}')">
+                            Open Scan
+                        </button>
+                    </div>
+                `;
+            }).join("");
+        } catch (err) {
+            document.getElementById("historyList").innerText = "Failed to load scan history.";
         }
+    }
 
-        async function loadSpecificScan(scanId) {
-            try {
-                showLoading();
+    async function loadSpecificScan(scanId) {
+        try {
+            showLoading();
 
-                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history/${scanId}`);
-                const data = await res.json();
+            const res = await fetchWithAuth(`${BACKEND_BASE_URL}/scan-history/${scanId}`);
+            const data = await res.json();
 
-                hideLoading();
+            hideLoading();
 
-                if (data.message === "Scan not found") {
-                    alert("Scan not found.");
-                    return;
-                }
-
-                renderDashboard(data, `Loaded previous scan from ${data.scan_date}`);
-            } catch (err) {
-                hideLoading();
-                alert("Failed to open selected scan.");
+            if (data.message === "Scan not found") {
+                alert("Scan not found.");
+                return;
             }
+
+            renderDashboard(data, `Loaded previous scan from ${data.scan_date}`);
+        } catch (err) {
+            hideLoading();
+            alert("Failed to open selected scan.");
         }
+    }
 
-        async function exportCSV() {
-            try {
-                const res = await fetchWithAuth(`${BACKEND_BASE_URL}/export`);
+    async function exportCSV() {
+        try {
+            const res = await fetchWithAuth(`${BACKEND_BASE_URL}/export`);
 
-                if (!res.ok) {
-                    const err = await res.text();
-                    throw new Error(err);
-                }
+            if (!res.ok) throw new Error(await res.text());
 
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const disposition = res.headers.get("Content-Disposition") || "";
-                const match = disposition.match(/filename=([^;]+)/);
-                const filename = match ? match[1].replace(/"/g, "") : "cloud_security_report.csv";
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const disposition = res.headers.get("Content-Disposition") || "";
+            const match = disposition.match(/filename=([^;]+)/);
+            const filename = match ? match[1].replace(/"/g, "") : "cloud_security_report.csv";
 
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            } catch (err) {
-                console.error("EXPORT ERROR:", err);
-                alert("CSV export failed.");
-            }
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error("EXPORT ERROR:", err);
+            alert("CSV export failed. Please ask an Admin to run a scan first.");
         }
+    }
 
-        function logout() {
-            localStorage.removeItem("token");
+    function logout() {
+        localStorage.removeItem("token");
 
-            const logoutUrl =
-                `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
+        const logoutUrl =
+            `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(LOGOUT_URI)}`;
 
-            window.location.href = logoutUrl;
-        }
-    </script>
+        window.location.href = logoutUrl;
+    }
+</script>
 </body>
 </html>
