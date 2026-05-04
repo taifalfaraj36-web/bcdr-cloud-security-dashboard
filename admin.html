@@ -1007,15 +1007,6 @@ thead th:first-child {
             });
         }
 
-        function normalizeIssue(issue = "") {
-            const i = issue.toLowerCase();
-
-            if (i.includes("mfa")) {
-                return "IAM user has console access without MFA enabled";
-            }
-
-            return issue;
-        }
 
         function getRecommendation(issue = "", service = "") {
             const i = issue.toLowerCase();
@@ -1061,7 +1052,7 @@ thead th:first-child {
     tr.style.background = "#fee2e2";
     tr.style.borderLeft = "6px solid #b91c1c";
 }
-                    const normalizedIssue = normalizeIssue(item.issue || "");
+                    const normalizedIssue = item.issue || "";
 
                     tr.innerHTML = `
                         <td>${item.service || "N/A"}</td>
