@@ -14,7 +14,8 @@ def check_s3_buckets():
             "issue": f"Unable to list S3 buckets: {str(e)}",
             "severity": "High",
             "status": "ERROR",
-            "recommendation": "Check that the required S3 read permissions are assigned."
+            "recommendation": "Ensure the IAM role/user has permission: s3:ListAllMyBuckets.",
+            "recommendation_link": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-iam.html"
         }]
 
     if not buckets:
@@ -24,7 +25,8 @@ def check_s3_buckets():
             "issue": "No S3 buckets found",
             "severity": "Low",
             "status": "PASS",
-            "recommendation": "No action required."
+            "recommendation": "No action required.",
+            "recommendation_link": "#"
         })
         return results
 
@@ -32,10 +34,11 @@ def check_s3_buckets():
         results.append({
             "service": "S3",
             "resource": bucket["Name"],
-            "issue": "Bucket discovered. Detailed public access and encryption validation requires additional bucket-level checks.",
+            "issue": "Bucket discovered. Public access and encryption not validated in fast scan mode.",
             "severity": "Low",
             "status": "PASS",
-            "recommendation": "Review S3 Block Public Access and default encryption settings for this bucket."
+            "recommendation": "Go to AWS Console → S3 → select this bucket → Permissions → Block Public Access → Enable all options. Then go to Properties → Default encryption → Enable.",
+            "recommendation_link": "https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access.html"
         })
 
     return results

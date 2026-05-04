@@ -21,7 +21,8 @@ def check_iam_mfa():
             "issue": f"Unable to list IAM users: {str(e)}",
             "severity": "High",
             "status": "ERROR",
-            "recommendation": "Check IAM read permissions."
+            "recommendation": "Ensure the IAM role or user has these read-only permissions: iam:ListUsers, iam:GetLoginProfile, and iam:ListMFADevices.",
+            "recommendation_link": "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html"
         }]
 
     for user in users:
@@ -52,7 +53,8 @@ def check_iam_mfa():
                 "issue": "IAM user has console access without MFA enabled",
                 "severity": "High",
                 "status": "FAIL",
-                "recommendation": "Enable MFA for this IAM user because the account has console access."
+                "recommendation": "Go to AWS Console → IAM → Users → select this user → Security credentials → Assigned MFA device → Manage → Assign MFA device.",
+                "recommendation_link": "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa_enable.html"
             })
         else:
             results.append({
@@ -61,7 +63,8 @@ def check_iam_mfa():
                 "issue": "MFA enabled or user does not have console access",
                 "severity": "Low",
                 "status": "PASS",
-                "recommendation": "No action required."
+                "recommendation": "No action required.",
+                "recommendation_link": "#"
             })
 
     return results
