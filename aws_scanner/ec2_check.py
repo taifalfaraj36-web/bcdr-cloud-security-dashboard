@@ -45,7 +45,9 @@ def check_ec2_security_groups():
             to_port = permission.get("ToPort", "All")
 
             if protocol == "-1":
-                port_display = "All traffic / ICMP"
+                port_display = "All traffic"
+            elif protocol == "icmp":
+                prot_display = "ICMP"    
             else:
                 port_display = f"{from_port}-{to_port}"
 
