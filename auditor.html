@@ -977,12 +977,12 @@ thead th:first-child {
                     <td>${renderSeverityBadge(severity)}</td>
                     <td>${renderStatusBadge(status)}</td>
                     <td>
-                        <span class="rec-text">${item.recommendation || "Review AWS configuration and apply CIS AWS security best practices."}</span>
-                        ${
-                            item.recommendation_link && item.recommendation_link !== "#"
-                            ? `<a class="rec-link" href="${item.recommendation_link}" target="_blank">Open guide</a>`
-                            : ""
-                        }
+                       <span class="rec-text">${item.recommendation || "No recommendation available."}</span>
+${
+    item.recommendation_link && item.recommendation_link !== "#"
+    ? `<br><a class="rec-link" href="${item.recommendation_link}" target="_blank">View Fix Guide</a>`
+    : ""
+}
                     </td>
                 `;
 

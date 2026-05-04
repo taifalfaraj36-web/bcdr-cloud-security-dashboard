@@ -1069,8 +1069,12 @@ thead th:first-child {
                         <td>${normalizedIssue || "N/A"}</td>
                         <td>${renderSeverityBadge(severity)}</td>
                         <td>
-                            <span class="rec-text">${getRecommendation(normalizedIssue, item.service || "")}</span>
-                            ${item.recommendation_link ? `<a class="rec-link" href="${item.recommendation_link}" target="_blank">Open guide</a>` : ""}
+                             <span class="rec-text">${item.recommendation || getRecommendation(normalizedIssue, item.service || "")}</span>
+    ${
+        item.recommendation_link && item.recommendation_link !== "#"
+        ? `<br><a class="rec-link" href="${item.recommendation_link}" target="_blank">View Fix Guide</a>`
+        : ""
+    }
                         </td>
                     `;
 

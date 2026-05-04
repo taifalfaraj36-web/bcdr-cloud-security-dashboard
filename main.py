@@ -125,7 +125,7 @@ def run_scan_logic():
     history = load_history()
     prev = history[-1] if history else None
 
-    improvement = 0
+    improvement = "N/A"
     comparison = {"fixed": 0, "new": 0}
 
     if prev:
@@ -134,6 +134,8 @@ def run_scan_logic():
 
         improvement = round(new_score - old_score, 2)
         comparison = compare(prev.get("results", []), sorted_results)
+
+    
 
     scan = {
         "scan_id": datetime.now().strftime("%Y%m%d_%H%M%S"),
