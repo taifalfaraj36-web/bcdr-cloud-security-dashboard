@@ -73,24 +73,28 @@
             gap: 12px;
             margin-top: 10px;
         }
+    .menu-item {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    background: transparent;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+    text-align: left;
+    box-shadow: none;
+}
 
-        .menu-item {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: white;
-            padding: 14px 16px;
-            border-radius: 14px;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
-        }
+.menu-item.active {
+    background: rgba(255,255,255,0.08);
+    border-left: 4px solid #ffffff;
+    color: white;
+}
 
-        .menu-item.active {
-            background: white;
-            color: #0f172a;
-        }
-
+.menu-item:hover {
+    background: rgba(255,255,255,0.06);
+}
         .content {
             flex: 1;
             padding: 28px;
@@ -244,6 +248,8 @@
             margin-bottom: 24px;
         }
 
+
+
         .panel {
             background: #ffffff;
             border-radius: 20px;
@@ -293,6 +299,10 @@
             flex-wrap: wrap;
             margin-bottom: 12px;
         }
+   
+.charts-grid canvas {
+    max-height: 280px !important;
+}
 
         .filter-box {
             display: flex;
@@ -538,6 +548,130 @@ thead th:first-child {
 .panel:hover {
     transform: translateY(-4px);
 }
+
+
+/* Compact dashboard view - reduce scrolling 
+.content {
+    padding: 20px;
+}
+
+.dashboard {
+    max-width: 90%;
+}
+
+.topbar {
+    padding: 16px 15px;
+    margin-bottom: 10px;
+}
+
+.topbar h1 {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+}
+
+.welcome-card {
+    padding: 16px 22px;
+    margin-bottom: 14px;
+}
+
+.welcome-card h2 {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+}
+
+.summary-grid {
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.summary-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    min-height: 110px;
+}
+
+.summary-card .label {
+    font-size: 0.78rem;
+    margin-bottom: 6px;
+}
+
+.summary-card .value {
+    font-size: 1.45rem;
+}
+
+.summary-card .sub-note {
+    font-size: 0.68rem;
+    line-height: 1.35;
+}
+
+.charts-grid {
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.history-grid {
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.panel {
+    padding: 16px;
+    border-radius: 15px;
+}
+
+.panel h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.charts-grid canvas {
+    max-height: 210px !important;
+}
+
+.history-item {
+    padding: 8px 0;
+}
+
+.history-item .meta {
+    font-size: 0.78rem;
+}
+
+.history-item .open-btn,
+.btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+.findings-panel {
+    padding: 16px;
+    border-radius: 15px;
+}
+
+.findings-header {
+    margin-bottom: 8px;
+}
+
+.findings-panel h3 {
+    font-size: 1rem;
+}
+
+.table-wrap {
+    max-height: 260px;
+}
+
+th, td {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+}
+
+.filter-box label,
+.filter-box select {
+    font-size: 0.78rem;
+}
+
+.filter-box select {
+    padding: 7px 9px;
+} */
     </style>
 </head>
 <body>
@@ -573,7 +707,7 @@ thead th:first-child {
                         <p>This dashboard provides continuous monitoring of AWS security posture aligned with CIS best practices.</p>
                     </div>
                     <div class="top-actions">
-                        <button class="btn btn-secondary" onclick="getMe()">Get My Info</button>
+                        
                         <button class="btn btn-primary" onclick="runScan()">Run Scan</button>
                         <button id="viewBtn" class="btn btn-secondary" onclick="getFindings()" disabled>View Findings</button>
                         <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>

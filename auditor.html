@@ -74,22 +74,28 @@
             margin-top: 10px;
         }
 
-        .menu-item {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            color: white;
-            padding: 14px 16px;
-            border-radius: 14px;
-            font-weight: 600;
-            text-align: center;
-            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
-        }
+       .menu-item {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    background: transparent;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+    text-align: left;
+    box-shadow: none;
+}
 
-        .menu-item.active {
-            background: white;
-            color: #0f172a;
-        }
+.menu-item.active {
+    background: rgba(255,255,255,0.08);
+    border-left: 4px solid #ffffff;
+    color: white;
+}
+
+.menu-item:hover {
+    background: rgba(255,255,255,0.06);
+}
 
         .content {
             flex: 1;
@@ -584,7 +590,7 @@ thead th:first-child {
             <div class="sidebar-menu">
                 <div class="menu-item active">Auditor Panel</div>
                 <div class="menu-item">Read-Only Findings</div>
-                <div class="menu-item">Reports</div>
+                <div class="menu-item">Compliance Reports</div>
             </div>
         </aside>
 
@@ -596,7 +602,7 @@ thead th:first-child {
                         <p>This dashboard provides continuous monitoring of AWS security posture aligned with CIS best practices.</p>
                     </div>
                     <div class="top-actions">
-                        <button class="btn btn-secondary" onclick="getMe()">Get My Info</button>
+                    
                         <button class="btn btn-primary" onclick="getFindings()">View Findings</button>
                         <button class="btn btn-secondary" onclick="exportCSV()">Export CSV</button>
                         <button class="btn btn-secondary" onclick="logout()">Logout</button>
