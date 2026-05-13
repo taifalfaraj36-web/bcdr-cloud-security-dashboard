@@ -2,7 +2,7 @@ import boto3
 import botocore
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-MAX_BUCKETS_TO_SCAN = 25
+MAX_BUCKETS_TO_SCAN = 20
 
 def get_s3_client():
     config_timeout = botocore.config.Config(
