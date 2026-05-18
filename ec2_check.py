@@ -45,7 +45,9 @@ def check_ec2_security_groups():
             to_port = permission.get("ToPort", "All")
 
             if protocol == "-1":
-                port_display = "All traffic / ICMP"
+                port_display = "All traffic"
+            elif protocol == "icmp":
+                prot_display = "ICMP"    
             else:
                 port_display = f"{from_port}-{to_port}"
 
@@ -53,26 +55,30 @@ def check_ec2_security_groups():
                 cidr = ip_range.get("CidrIp", "")
                 if cidr == "0.0.0.0/0":
                     severity = classify_severity(from_port, to_port)
+
                     results.append({
                         "service": "EC2",
                         "resource": f"{sg_name} ({sg_id})",
                         "issue": f"Port {port_display} open to the internet via IPv4",
                         "severity": severity,
                         "status": "FAIL",
-                        "recommendation": "Restrict this inbound rule to specific trusted IP addresses instead of allowing public access."
+                        "recommendation": "Go to AWS Console → EC2 → Security Groups → select this security group → Edit inbound rules → remove 0.0.0.0/0 or restrict it to a trusted IP address only.",
+                        "recommendation_link": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html"
                     })
 
             for ipv6_range in permission.get("Ipv6Ranges", []):
                 cidr_ipv6 = ipv6_range.get("CidrIpv6", "")
                 if cidr_ipv6 == "::/0":
                     severity = classify_severity(from_port, to_port)
+
                     results.append({
                         "service": "EC2",
                         "resource": f"{sg_name} ({sg_id})",
                         "issue": f"Port {port_display} open to the internet via IPv6",
                         "severity": severity,
                         "status": "FAIL",
-                        "recommendation": "Restrict this IPv6 inbound rule to trusted addresses instead of allowing public access."
+                        "recommendation": "Go to AWS Console → EC2 → Security Groups → select this security group → Edit inbound rules → remove ::/0 or restrict IPv6 access to trusted addresses only.",
+                        "recommendation_link": "https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html"
                     })
 
     if not results:
@@ -82,7 +88,8 @@ def check_ec2_security_groups():
             "issue": "No public inbound rules detected",
             "severity": "Low",
             "status": "PASS",
-            "recommendation": "No action required."
+            "recommendation": "No action required.",
+            "recommendation_link": "#"
         })
 
     return results

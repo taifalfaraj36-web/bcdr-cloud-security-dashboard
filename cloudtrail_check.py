@@ -15,7 +15,8 @@ def check_cloudtrail():
                 "issue": "No CloudTrail trails configured",
                 "severity": "Critical",
                 "status": "FAIL",
-                "recommendation": "Enable CloudTrail to log account activity for security monitoring and auditing."
+                "recommendation": "Go to AWS Console → CloudTrail → Create trail → Enable logging → choose an S3 bucket → Save.",
+                "recommendation_link": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-create-and-update-a-trail.html"
             })
         else:
             for trail in trails:
@@ -30,7 +31,8 @@ def check_cloudtrail():
                         "issue": "CloudTrail logging enabled",
                         "severity": "Low",
                         "status": "PASS",
-                        "recommendation": "No action required."
+                        "recommendation": "No action required.",
+                        "recommendation_link": "#"
                     })
                 else:
                     results.append({
@@ -39,7 +41,8 @@ def check_cloudtrail():
                         "issue": "CloudTrail logging disabled",
                         "severity": "Critical",
                         "status": "FAIL",
-                        "recommendation": "Enable logging for this trail to ensure activity is recorded."
+                        "recommendation": "Go to AWS Console → CloudTrail → Trails → select this trail → Start logging.",
+                        "recommendation_link": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-create-and-update-a-trail.html"
                     })
 
     except Exception as e:
@@ -49,7 +52,8 @@ def check_cloudtrail():
             "issue": f"Unable to verify CloudTrail configuration: {str(e)}",
             "severity": "High",
             "status": "ERROR",
-            "recommendation": "Check AWS permissions and CloudTrail configuration."
+            "recommendation": "Ensure the IAM role/user has permissions: cloudtrail:DescribeTrails and cloudtrail:GetTrailStatus.",
+            "recommendation_link": "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/security_iam_id-based-policy-examples.html"
         })
 
     return results
